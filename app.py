@@ -16,6 +16,43 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 
 
+@app.route('/node/resolve', methods=['GET'])
+def consensus():
+    replaced = blockchain.resolve_conflicts()
+
+    if replaced:
+        response = {
+            'message': 'A cadeia foi substituída',
+            'new_chain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'A cadeia é autoritativa',
+            'chain': blockchain.chain
+        }
+
+    return jsonify(response), 200
+
+
+@app.route('/node/register', methods=['POST'])
+def register_nodes():
+    values = request.get_json()
+
+    nodes = values.get('nodes')
+    if nodes is None:
+        return "ERRO: Forneça uma lista válida de nós", 400
+    
+    for node in nodes:
+        blockchain.register_node(node)
+    
+    response = {
+        'message': 'Novos nós foram adicionados',
+        'total_nodes': list(blockchain.nodes)
+    }
+
+    return jsonify(response), 201
+
+
 @app.route('/mine', methods=['GET'])
 def mine():
     # Executar o algoritmo PoW para obter a proxima proof
@@ -45,6 +82,7 @@ def mine():
 
     return jsonify(response), 200
 
+
 @app.route("/transactions/new", methods=["POST"])
 def new_transaction():
     values = request.get_json()
@@ -59,6 +97,7 @@ def new_transaction():
     response = {'message': f'Transação será adicionada ao bloco {index}'}
     return jsonify(response), 201
 
+
 @app.route("/chain", methods=['GET'])
 def full_chain():
     response = {
@@ -68,5 +107,7 @@ def full_chain():
 
     return jsonify(response), 200
 
+
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", port=5000)
+
